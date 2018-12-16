@@ -62,7 +62,7 @@ def s3_put_event_factory(bucket, key):
     :return: an s3 event dict
     """
 
-    with open(os.path.join('/Users/venkkataraman.r/workspace/tcs_ci_session/tests/fixtures/s3_put_event.json')) as f:
+    with open(os.path.abspath(os.path.join(THIS_DIR, '..', 'tests/fixtures/s3_put_event.json'))) as f:
         event = json.loads(f.read())
 
     event['Records'][0]['s3']['bucket']['name'] = bucket
