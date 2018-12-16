@@ -24,7 +24,6 @@ custom:
     useDownloadCache: true
     staticCacheMaxVersions: 10
     cacheLocation: ${opt:cwd}/.pip-cache
-    staticCacheMaxVersions: 10
     pipCmdExtraArgs:
       - --no-index
       - --find-links ${opt:cwd}/.wheelhouse
