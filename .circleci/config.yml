@@ -26,7 +26,7 @@ jobs:
             pip install -U pip wheel --cache-dir ./.pip-cache
             pip wheel -r dev_requirements.txt -w ./.wheelhouse --cache-dir ./.pip-cache
             pip install -r dev_requirements.txt --no-index --find-links ./.wheelhouse
-            fab deps
+            pip install -r math_lambda/requirements.txt
             cat math_lambda/requirements.txt | md5sum | cut -d' ' -f1 > deps_hash.txt
       - save_cache:
           name: Virtual Environment
