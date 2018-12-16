@@ -1,0 +1,65 @@
+---
+
+service: ci-session-serverless
+provider:
+  name: aws
+  region: eu-west-1
+  role: arn:aws:iam::782412278538:role/Developer
+  runtime: python3.6
+  tags:
+    ownername: Venkkataraman R
+  iamRoleStatements:
+    -  Effect: "Allow"
+       Action:
+         - "s3:PutBucketNotification"
+       Resource:
+         Fn::Join:
+           - ""
+           - - venkkat-test
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    useStaticCache: true
+    useDownloadCache: true
+    staticCacheMaxVersions: 10
+    cacheLocation: ${opt:cwd}/.pip-cache
+    staticCacheMaxVersions: 10
+    pipCmdExtraArgs:
+      - --no-index
+      - --find-links ${opt:cwd}/.wheelhouse
+    slim: true
+    zip: true
+  isLive:
+    dev: no
+    prod: yes
+  project:
+    dev: dev1
+  environment:
+    dev: dev-math
+
+
+package:
+  exclude: ['*/**']
+  individually: true
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-existing-s3
+
+functions:
+  math_lambda:
+    handler: handler.lambda_handler
+    memorySize: 3008
+    timeout: 300
+    module: math_lambda
+    package:
+      include:
+        - math_lambda/**
+        - common/**
+    events:
+      - existingS3:
+          bucket: venkkat-test
+          events: ["s3:ObjectCreated:*"]
+          rules:
+            - suffix: .csv

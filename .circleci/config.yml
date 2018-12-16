@@ -1,0 +1,93 @@
+---
+
+defaults: &defaults
+  working_directory: /home/circleci/Replen
+  docker:
+    - image: lambci/lambda:build-python3.6
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: cat math_lambda/requirements.txt | md5sum | cut -d' ' -f1 > deps_hash.txt
+      - restore_cache:
+          name: Restoring python virtualenv cache
+          key: dependencies-python-{{ checksum "dev_requirements.txt" }}
+      - restore_cache:
+          name: Restoring cached python dependencies
+          key: dependencies-python-{{ checksum "deps_hash.txt" }}
+      - run:
+          name: install python dependencies
+          command: |
+            python3 -m venv .venv
+            . .venv/bin/activate
+            pip install -U pip wheel --cache-dir ./.pip-cache
+            pip wheel -r dev_requirements.txt -w ./.wheelhouse --cache-dir ./.pip-cache
+            pip install -r dev_requirements.txt --no-index --find-links ./.wheelhouse
+            fab deps
+            cat math_lambda/requirements.txt | md5sum | cut -d' ' -f1 > deps_hash.txt
+      - save_cache:
+          name: Virtual Environment
+          key: dependencies-python-{{ checksum "dev_requirements.txt" }}
+          paths:
+            - .venv
+      - save_cache:
+          name: Python Dependencies
+          key: dependencies-python-{{ checksum "deps_hash.txt" }}
+          paths:
+            - .pip-cache
+            - .wheelhouse
+      - run: cat .circleci/env.sh >> $BASH_ENV
+      - run: fab check
+      - run: fab test
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .venv
+            - deps_hash.txt
+
+  deploy_stage:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          name: Restoring cached python dependencies
+          key: dependencies-python-{{ checksum "deps_hash.txt" }}
+      - restore_cache:
+          name: Restoring NPM dependencies cache
+          key: dependencies-node-{{ checksum "package.json" }}
+      - run:
+          name: Install node and npm
+          command: |
+            curl --silent --location https://rpm.nodesource.com/setup_6.x | bash -
+            yum -y install nodejs
+      - run:
+          name: Install Serverless CLI and dependencies
+          command: npm i
+      - save_cache:
+          name: NPM Dependencies
+          paths:
+            - node_modules
+          key: dependencies-node-{{ checksum "package.json" }}
+      - run: cat .circleci/env.sh >> $BASH_ENV
+      - run:
+          name: Deploy
+          command: |
+            export AWS_ACCESS_KEY_ID=$AWS_DEV_CD_KEY
+            export AWS_SECRET_ACCESS_KEY=$AWS_DEV_CD_SECRET
+            fab package:dev deploy:dev
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy_stage:
+          requires: [build]
+          filters:
+            branches:
+              only: develop
