@@ -2,7 +2,7 @@ import boto3
 import os
 from moto import mock_s3
 from common.utils import s3_put_event_factory, read_s3_file, get_all_keys
-from math_lambda.handler import lambda_handler
+from lambda.handler import lambda_handler
 
 THIS_DIR = os.path.dirname(__file__)
 FIXTURES_DIR = os.path.join(THIS_DIR, 'fixtures')
