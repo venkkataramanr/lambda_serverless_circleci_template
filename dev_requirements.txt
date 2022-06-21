@@ -6,4 +6,4 @@ moto==1.3.3                 # Mocking library for boto
 pytest==3.7.1               # Test runner for python
 flake8==3.5.0               # static code checking tools
 pandas==0.23.4
-numpy==1.15.4
+numpy==1.22.0
